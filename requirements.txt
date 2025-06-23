@@ -1,5 +1,4 @@
 PyQt6
-PyQt6.QtMultimedia
 qt-material
 qasync
 pillow
