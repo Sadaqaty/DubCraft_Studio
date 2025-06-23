@@ -9,7 +9,6 @@ whisperx
 pyannote-audio
 deep-translator
 tortoise-tts
-bark-tts
 numpy
 scipy
 pydub
