@@ -1,0 +1,17 @@
+PyQt6
+PyQt6.QtMultimedia
+qt-material
+qasync
+pillow
+moviepy
+ffmpeg-python
+faster-whisper
+whisperx
+pyannote-audio
+deep-translator
+tortoise-tts
+bark-tts
+numpy
+scipy
+pydub
+requests 
