@@ -3,6 +3,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QMovie
 import os
 
+
 class LoadingOverlay(QWidget):
     def __init__(self, parent=None, message="Loading..."):
         super().__init__(parent)
@@ -13,7 +14,7 @@ class LoadingOverlay(QWidget):
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         # Spinner GIF
-        spinner_path = os.path.join(os.path.dirname(__file__), '../assets/spinner.gif')
+        spinner_path = os.path.join(os.path.dirname(__file__), "../assets/spinner.gif")
         self.spinner = QLabel()
         self.movie = QMovie(spinner_path)
         self.spinner.setMovie(self.movie)
@@ -32,4 +33,4 @@ class LoadingOverlay(QWidget):
 
     def hide(self):
         self.setVisible(False)
-        self.movie.stop() 
+        self.movie.stop()

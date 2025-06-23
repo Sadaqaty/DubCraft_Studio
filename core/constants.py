@@ -15,4 +15,4 @@ LANGUAGE_CODES = {
     "Arabic": "ar",
 }
 
-DEFAULT_MODEL_PATH = "models/" 
+DEFAULT_MODEL_PATH = "models/"

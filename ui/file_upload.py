@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QFileDial
 from PyQt6.QtCore import Qt, pyqtSignal
 import os
 
+
 class FileUploadWidget(QWidget):
     fileSelected = pyqtSignal(str)
 
@@ -38,10 +39,12 @@ class FileUploadWidget(QWidget):
                 break
 
     def open_file_dialog(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Select Video File", "", "Video Files (*.mp4 *.mkv *.mov *.avi)")
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Select Video File", "", "Video Files (*.mp4 *.mkv *.mov *.avi)"
+        )
         if file_path:
             self.fileSelected.emit(file_path)
             self.label.setText(f"Selected: {os.path.basename(file_path)}")
 
     def is_video_file(self, path):
-        return os.path.splitext(path)[1].lower() in ['.mp4', '.mkv', '.mov', '.avi'] 
+        return os.path.splitext(path)[1].lower() in [".mp4", ".mkv", ".mov", ".avi"]

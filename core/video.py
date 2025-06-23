@@ -1,4 +1,5 @@
 """Video processing: merging audio, burning subtitles."""
+
 from typing import Optional
 import moviepy.editor as mp
 import ffmpeg
@@ -6,7 +7,9 @@ import subprocess
 import os
 
 
-def merge_audio_with_video(video_path: str, audio_path: str, output_path: str, keep_bgm: bool = True) -> bool:
+def merge_audio_with_video(
+    video_path: str, audio_path: str, output_path: str, keep_bgm: bool = True
+) -> bool:
     """
     Merge dubbed audio with video, optionally keeping background music.
     If keep_bgm is True, mixes original video audio (music) with dubbed audio.
@@ -25,21 +28,21 @@ def merge_audio_with_video(video_path: str, audio_path: str, output_path: str, k
             mixed_audio_path = output_path + ".mixed.wav"
             (
                 ffmpeg.input(orig_audio_path)
-                .filter('volume', 0.5)
-                .output('vol1.wav', acodec="pcm_s16le", ac=2, ar="44100")
+                .filter("volume", 0.5)
+                .output("vol1.wav", acodec="pcm_s16le", ac=2, ar="44100")
                 .overwrite_output()
                 .run(quiet=True)
             )
             (
                 ffmpeg.input(audio_path)
-                .filter('volume', 1.0)
-                .output('vol2.wav', acodec="pcm_s16le", ac=2, ar="44100")
+                .filter("volume", 1.0)
+                .output("vol2.wav", acodec="pcm_s16le", ac=2, ar="44100")
                 .overwrite_output()
                 .run(quiet=True)
             )
             (
-                ffmpeg.input(['vol1.wav', 'vol2.wav'])
-                .filter('amix', inputs=2, duration='longest')
+                ffmpeg.input(["vol1.wav", "vol2.wav"])
+                .filter("amix", inputs=2, duration="longest")
                 .output(mixed_audio_path, acodec="pcm_s16le", ac=2, ar="44100")
                 .overwrite_output()
                 .run(quiet=True)
@@ -47,19 +50,31 @@ def merge_audio_with_video(video_path: str, audio_path: str, output_path: str, k
             # Merge mixed audio with video
             (
                 ffmpeg.input(video_path)
-                .output(output_path, audio=mixed_audio_path, vcodec='copy', acodec='aac', strict='experimental')
+                .output(
+                    output_path,
+                    audio=mixed_audio_path,
+                    vcodec="copy",
+                    acodec="aac",
+                    strict="experimental",
+                )
                 .overwrite_output()
                 .run(quiet=True)
             )
             # Cleanup temp files
-            for f in [orig_audio_path, 'vol1.wav', 'vol2.wav', mixed_audio_path]:
+            for f in [orig_audio_path, "vol1.wav", "vol2.wav", mixed_audio_path]:
                 if os.path.exists(f):
                     os.remove(f)
         else:
             # Replace audio track with dubbed audio
             (
                 ffmpeg.input(video_path)
-                .output(output_path, audio=audio_path, vcodec='copy', acodec='aac', strict='experimental')
+                .output(
+                    output_path,
+                    audio=audio_path,
+                    vcodec="copy",
+                    acodec="aac",
+                    strict="experimental",
+                )
                 .overwrite_output()
                 .run(quiet=True)
             )
@@ -76,9 +91,15 @@ def burn_subtitles(video_path: str, srt_path: str, output_path: str) -> bool:
     try:
         # ffmpeg must be compiled with libass for subtitles
         cmd = [
-            'ffmpeg', '-y', '-i', video_path,
-            '-vf', f"subtitles={srt_path}",
-            '-c:a', 'copy', output_path
+            "ffmpeg",
+            "-y",
+            "-i",
+            video_path,
+            "-vf",
+            f"subtitles={srt_path}",
+            "-c:a",
+            "copy",
+            output_path,
         ]
         subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return True
@@ -94,11 +115,11 @@ def get_video_info(video_path: str) -> Optional[dict]:
     try:
         clip = mp.VideoFileClip(video_path)
         info = {
-            'duration': clip.duration,
-            'fps': clip.fps,
-            'size': clip.size,
-            'audio_fps': clip.audio.fps if clip.audio else None,
-            'audio_channels': clip.audio.nchannels if clip.audio else None,
+            "duration": clip.duration,
+            "fps": clip.fps,
+            "size": clip.size,
+            "audio_fps": clip.audio.fps if clip.audio else None,
+            "audio_channels": clip.audio.nchannels if clip.audio else None,
         }
         clip.close()
         return info
@@ -115,10 +136,11 @@ def extract_preview_frame(video_path: str, time: float, out_path: str) -> bool:
         clip = mp.VideoFileClip(video_path)
         frame = clip.get_frame(time)
         from PIL import Image
+
         img = Image.fromarray(frame)
         img.save(out_path)
         clip.close()
         return True
     except Exception as e:
         print(f"extract_preview_frame error: {e}")
-        return False 
+        return False

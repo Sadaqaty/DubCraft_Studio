@@ -1,4 +1,29 @@
-from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedWidget, QListWidget, QListWidgetItem, QProgressBar, QFrame, QStatusBar, QMessageBox, QComboBox, QTextEdit, QCheckBox, QFileDialog, QLineEdit, QDialog, QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QDialogButtonBox
+from PyQt6.QtWidgets import (
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QPushButton,
+    QLabel,
+    QStackedWidget,
+    QListWidget,
+    QListWidgetItem,
+    QProgressBar,
+    QFrame,
+    QStatusBar,
+    QMessageBox,
+    QComboBox,
+    QTextEdit,
+    QCheckBox,
+    QFileDialog,
+    QLineEdit,
+    QDialog,
+    QTableWidget,
+    QTableWidgetItem,
+    QHeaderView,
+    QAbstractItemView,
+    QDialogButtonBox,
+)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QObject, QPropertyAnimation
 from PyQt6.QtGui import QIcon
 import os
@@ -16,6 +41,7 @@ from core.video import merge_audio_with_video
 from pydub import AudioSegment
 from core.subtitles import generate_srt
 
+
 class AudioExtractWorker(QObject):
     finished = pyqtSignal(bool, str)
     progress = pyqtSignal(int)
@@ -31,6 +57,7 @@ class AudioExtractWorker(QObject):
         self.progress.emit(100 if success else 0)
         self.finished.emit(success, self.audio_out_path if success else "")
 
+
 class DiarizationWorker(QObject):
     finished = pyqtSignal(list)
     progress = pyqtSignal(int)
@@ -44,6 +71,7 @@ class DiarizationWorker(QObject):
         speakers = diarize_speakers(self.audio_path)
         self.progress.emit(40)
         self.finished.emit(speakers)
+
 
 class TranscriptionWorker(QObject):
     finished = pyqtSignal(list)
@@ -59,6 +87,7 @@ class TranscriptionWorker(QObject):
         self.progress.emit(50)
         self.finished.emit(segments)
 
+
 class TranslationWorker(QObject):
     finished = pyqtSignal(list)
     progress = pyqtSignal(int)
@@ -70,10 +99,11 @@ class TranslationWorker(QObject):
 
     def run(self):
         self.progress.emit(55)
-        texts = [seg['text'] for seg in self.segments]
+        texts = [seg["text"] for seg in self.segments]
         translated = batch_translate_texts(texts, self.target_language)
         self.progress.emit(60)
         self.finished.emit(translated)
+
 
 class TTSDubWorker(QObject):
     finished = pyqtSignal(str)
@@ -92,13 +122,22 @@ class TTSDubWorker(QObject):
         # Synthesize each segment and concatenate
         segments_audio = []
         for i, seg in enumerate(self.transcript):
-            speaker = seg.get('speaker', self.speakers[0] if self.speakers else 'Speaker 1')
-            text = seg.get('translated_text', seg.get('text', ''))
-            voice = self.voices.get(speaker, self.voices[self.speakers.index(speaker)] if speaker in self.speakers else list(self.voices.values())[0])
+            speaker = seg.get(
+                "speaker", self.speakers[0] if self.speakers else "Speaker 1"
+            )
+            text = seg.get("translated_text", seg.get("text", ""))
+            voice = self.voices.get(
+                speaker,
+                (
+                    self.voices[self.speakers.index(speaker)]
+                    if speaker in self.speakers
+                    else list(self.voices.values())[0]
+                ),
+            )
             emotion = self.emotions.get(speaker, None)
             audio_path = synthesize_speech(text, voice, emotion)
             segments_audio.append(AudioSegment.from_file(audio_path))
-            self.progress.emit(70 + int(20 * (i+1)/len(self.transcript)))
+            self.progress.emit(70 + int(20 * (i + 1) / len(self.transcript)))
         # Concatenate all segments
         if segments_audio:
             final_audio = segments_audio[0]
@@ -108,21 +147,26 @@ class TTSDubWorker(QObject):
         self.progress.emit(90)
         self.finished.emit(self.audio_out_path)
 
+
 class DubCraftMainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("DubCraft Studio")
         self.setMinimumSize(1200, 800)
-        self.setWindowIcon(QIcon(os.path.join(os.path.dirname(__file__), '../assets/logo.png')))
-        self.setStyleSheet(open(os.path.join(os.path.dirname(__file__), 'style.qss')).read())
+        self.setWindowIcon(
+            QIcon(os.path.join(os.path.dirname(__file__), "../assets/logo.png"))
+        )
+        self.setStyleSheet(
+            open(os.path.join(os.path.dirname(__file__), "style.qss")).read()
+        )
         self.session_state = {
-            'video_file': None,
-            'audio_path': None,
-            'language': None,
-            'speakers': [],
-            'voices': [],
-            'transcript': [],
-            'translated_transcript': []
+            "video_file": None,
+            "audio_path": None,
+            "language": None,
+            "speakers": [],
+            "voices": [],
+            "transcript": [],
+            "translated_transcript": [],
         }
         self.speakers = []  # List of detected speakers
         self.voices = list_voices() or ["Voice A", "Voice B", "Voice C"]
@@ -149,7 +193,7 @@ class DubCraftMainWindow(QMainWindow):
             ("🎬 Project"),
             ("🗣️ Voices"),
             ("📦 Export"),
-            ("📝 Logs")
+            ("📝 Logs"),
         ]
         for name in sidebar_items:
             item = QListWidgetItem(name)
@@ -217,9 +261,13 @@ class DubCraftMainWindow(QMainWindow):
         l.addWidget(self.progress_bar)
         # Transcript/subtitle display
         self.transcript_toggle = QComboBox()
-        self.transcript_toggle.addItems(["Original Transcript", "Translated Transcript"])
+        self.transcript_toggle.addItems(
+            ["Original Transcript", "Translated Transcript"]
+        )
         self.transcript_toggle.setToolTip("Toggle transcript/subtitle display")
-        self.transcript_toggle.currentIndexChanged.connect(self.update_transcript_display)
+        self.transcript_toggle.currentIndexChanged.connect(
+            self.update_transcript_display
+        )
         l.addWidget(self.transcript_toggle)
         self.transcript_text = QTextEdit()
         self.transcript_text.setReadOnly(True)
@@ -240,10 +288,12 @@ class DubCraftMainWindow(QMainWindow):
         idx = self.transcript_toggle.currentIndex()
         if idx == 0:
             # Original
-            text = '\n'.join([seg['text'] for seg in self.transcript])
+            text = "\n".join([seg["text"] for seg in self.transcript])
         else:
             # Translated
-            text = '\n'.join([seg.get('translated_text', seg['text']) for seg in self.transcript])
+            text = "\n".join(
+                [seg.get("translated_text", seg["text"]) for seg in self.transcript]
+            )
         self.transcript_text.setPlainText(text)
 
     def open_edit_translations_dialog(self):
@@ -251,31 +301,42 @@ class DubCraftMainWindow(QMainWindow):
         dialog.setWindowTitle("Edit Translations & Timing")
         layout = QVBoxLayout(dialog)
         table = QTableWidget(len(self.transcript), 4)
-        table.setHorizontalHeaderLabels(["Start Time (s)", "End Time (s)", "Original", "Translated"])
+        table.setHorizontalHeaderLabels(
+            ["Start Time (s)", "End Time (s)", "Original", "Translated"]
+        )
         table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         table.setEditTriggers(QAbstractItemView.EditTrigger.AllEditTriggers)
         for i, seg in enumerate(self.transcript):
-            table.setItem(i, 0, QTableWidgetItem(str(seg.get('start', 0))))
-            table.setItem(i, 1, QTableWidgetItem(str(seg.get('end', 0))))
-            table.setItem(i, 2, QTableWidgetItem(seg['text']))
-            table.setItem(i, 3, QTableWidgetItem(seg.get('translated_text', seg['text'])))
+            table.setItem(i, 0, QTableWidgetItem(str(seg.get("start", 0))))
+            table.setItem(i, 1, QTableWidgetItem(str(seg.get("end", 0))))
+            table.setItem(i, 2, QTableWidgetItem(seg["text"]))
+            table.setItem(
+                i, 3, QTableWidgetItem(seg.get("translated_text", seg["text"]))
+            )
         layout.addWidget(table)
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Save
+            | QDialogButtonBox.StandardButton.Cancel
+        )
         layout.addWidget(buttons)
+
         def save_edits():
             for i, seg in enumerate(self.transcript):
                 try:
-                    seg['start'] = float(table.item(i, 0).text())
-                    seg['end'] = float(table.item(i, 1).text())
+                    seg["start"] = float(table.item(i, 0).text())
+                    seg["end"] = float(table.item(i, 1).text())
                 except Exception:
-                    seg['start'] = seg.get('start', 0)
-                    seg['end'] = seg.get('end', 0)
-                seg['translated_text'] = table.item(i, 3).text()
-            self.translated_transcript = [seg['translated_text'] for seg in self.transcript]
-            self.session_state['translated_transcript'] = self.translated_transcript
+                    seg["start"] = seg.get("start", 0)
+                    seg["end"] = seg.get("end", 0)
+                seg["translated_text"] = table.item(i, 3).text()
+            self.translated_transcript = [
+                seg["translated_text"] for seg in self.transcript
+            ]
+            self.session_state["translated_transcript"] = self.translated_transcript
             self.update_transcript_display()
             autosave_session(self.session_state)
             dialog.accept()
+
         buttons.accepted.connect(save_edits)
         buttons.rejected.connect(dialog.reject)
         dialog.exec()
@@ -288,7 +349,9 @@ class DubCraftMainWindow(QMainWindow):
         l.addWidget(self.make_section_header("Speaker Voice Assignment"))
         # Speaker Assignment button
         self.speaker_assign_btn = QPushButton("Edit Speaker Assignments")
-        self.speaker_assign_btn.setToolTip("Manually assign speakers to transcript segments")
+        self.speaker_assign_btn.setToolTip(
+            "Manually assign speakers to transcript segments"
+        )
         self.speaker_assign_btn.clicked.connect(self.open_speaker_assignment_dialog)
         l.addWidget(self.speaker_assign_btn)
         # Use real speakers and voices
@@ -314,7 +377,9 @@ class DubCraftMainWindow(QMainWindow):
             row.addWidget(preview_btn)
             row.addStretch()
             l.addLayout(row)
-            self.voice_assign_widgets.append((label, voice_combo, emotion_combo, preview_btn))
+            self.voice_assign_widgets.append(
+                (label, voice_combo, emotion_combo, preview_btn)
+            )
         l.addStretch()
         w.setLayout(l)
         self.voices_panel_widget = w
@@ -330,21 +395,26 @@ class DubCraftMainWindow(QMainWindow):
         table.setEditTriggers(QAbstractItemView.EditTrigger.AllEditTriggers)
         speakers = self.speakers if self.speakers else ["Speaker 1", "Speaker 2"]
         for i, seg in enumerate(self.transcript):
-            table.setItem(i, 0, QTableWidgetItem(seg['text']))
+            table.setItem(i, 0, QTableWidgetItem(seg["text"]))
             speaker_combo = QComboBox()
             speaker_combo.addItems(speakers)
-            current = seg.get('speaker', speakers[0])
+            current = seg.get("speaker", speakers[0])
             speaker_combo.setCurrentText(str(current))
             table.setCellWidget(i, 1, speaker_combo)
         layout.addWidget(table)
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Save
+            | QDialogButtonBox.StandardButton.Cancel
+        )
         layout.addWidget(buttons)
+
         def save_edits():
             for i, seg in enumerate(self.transcript):
                 combo = table.cellWidget(i, 1)
-                seg['speaker'] = combo.currentText()
+                seg["speaker"] = combo.currentText()
             autosave_session(self.session_state)
             dialog.accept()
+
         buttons.accepted.connect(save_edits)
         buttons.rejected.connect(dialog.reject)
         dialog.exec()
@@ -352,10 +422,10 @@ class DubCraftMainWindow(QMainWindow):
     def update_voices_panel(self, speakers=None, voices=None):
         if speakers is not None:
             self.speakers = speakers
-            self.session_state['speakers'] = speakers
+            self.session_state["speakers"] = speakers
         if voices is not None:
             self.voices = voices
-            self.session_state['voices'] = voices
+            self.session_state["voices"] = voices
         # Remove old panel and insert new one
         idx = 2  # Voices panel index
         new_panel = self.make_voices_panel()
@@ -370,7 +440,7 @@ class DubCraftMainWindow(QMainWindow):
         self.progress_bar.setValue(40)
         self.progress_bar.setFormat("Speakers detected!")
         self.speakers = speakers if speakers else ["Speaker 1"]
-        self.session_state['speakers'] = self.speakers
+        self.session_state["speakers"] = self.speakers
         self.update_voices_panel(speakers=self.speakers)
         self.status.showMessage(f"Detected {len(self.speakers)} speaker(s).", 4000)
         autosave_session(self.session_state)
@@ -381,13 +451,21 @@ class DubCraftMainWindow(QMainWindow):
         # Gather voice/emotion assignments
         voices_map = {}
         emotions_map = {}
-        for i, (label, voice_combo, emotion_combo, _) in enumerate(self.voice_assign_widgets):
+        for i, (label, voice_combo, emotion_combo, _) in enumerate(
+            self.voice_assign_widgets
+        ):
             speaker = label.text()
             voices_map[speaker] = voice_combo.currentText()
             emotions_map[speaker] = emotion_combo.currentText()
         self.dubbed_audio_path = tempfile.mktemp(suffix="_dubbed.wav")
         self.tts_thread = QThread()
-        self.tts_worker = TTSDubWorker(self.transcript, self.speakers, voices_map, emotions_map, self.dubbed_audio_path)
+        self.tts_worker = TTSDubWorker(
+            self.transcript,
+            self.speakers,
+            voices_map,
+            emotions_map,
+            self.dubbed_audio_path,
+        )
         self.tts_worker.moveToThread(self.tts_thread)
         self.tts_thread.started.connect(self.tts_worker.run)
         self.tts_worker.progress.connect(self.progress_bar.setValue)
@@ -405,20 +483,29 @@ class DubCraftMainWindow(QMainWindow):
         self.progress_bar.setFormat("Merging dubbed audio with video...")
         self.status.showMessage("Merging dubbed audio with video...", 4000)
         # Merge dubbed audio with video
-        output_video_path = os.path.join(self.export_folder_le.text(), "final_video.mp4")
-        success = merge_audio_with_video(self.session_state['video_file'], audio_path, output_video_path, keep_bgm=True)
+        output_video_path = os.path.join(
+            self.export_folder_le.text(), "final_video.mp4"
+        )
+        success = merge_audio_with_video(
+            self.session_state["video_file"],
+            audio_path,
+            output_video_path,
+            keep_bgm=True,
+        )
         self.loading_overlay.hide()
         if success:
             self.progress_bar.setValue(100)
             self.progress_bar.setFormat("Dubbed video ready!")
-            self.status.showMessage(f"Dubbed video exported to {output_video_path}", 6000)
+            self.status.showMessage(
+                f"Dubbed video exported to {output_video_path}", 6000
+            )
         else:
             self.progress_bar.setValue(0)
             self.progress_bar.setFormat("Audio/video merge failed.")
             self.status.showMessage("Audio/video merge failed.", 6000)
 
     def on_language_changed(self, lang):
-        self.session_state['language'] = lang
+        self.session_state["language"] = lang
         autosave_session(self.session_state)
         self.status.showMessage(f"Language set to {lang}", 3000)
 
@@ -426,13 +513,19 @@ class DubCraftMainWindow(QMainWindow):
         state = restore_session()
         if state:
             self.session_state.update(state)
-            self.speakers = self.session_state.get('speakers', [])
-            self.voices = self.session_state.get('voices', list_voices() or ["Voice A", "Voice B", "Voice C"])
-            self.transcript = self.session_state.get('transcript', [])
-            self.translated_transcript = self.session_state.get('translated_transcript', [])
+            self.speakers = self.session_state.get("speakers", [])
+            self.voices = self.session_state.get(
+                "voices", list_voices() or ["Voice A", "Voice B", "Voice C"]
+            )
+            self.transcript = self.session_state.get("transcript", [])
+            self.translated_transcript = self.session_state.get(
+                "translated_transcript", []
+            )
             # Optionally, update UI to reflect restored state
-            if self.session_state.get('language'):
-                self.language_selector.combo.setCurrentText(self.session_state['language'])
+            if self.session_state.get("language"):
+                self.language_selector.combo.setCurrentText(
+                    self.session_state["language"]
+                )
             # You could also show the selected file, etc.
             self.update_voices_panel(self.speakers, self.voices)
             autosave_session(self.session_state)
@@ -463,7 +556,7 @@ class DubCraftMainWindow(QMainWindow):
         self.audio_thread.finished.connect(self.audio_thread.deleteLater)
         self.audio_thread.start()
         # Update session state
-        self.session_state['video_file'] = file_path
+        self.session_state["video_file"] = file_path
         autosave_session(self.session_state)
         self.status.showMessage("Video file selected. Extracting audio...", 4000)
 
@@ -472,7 +565,7 @@ class DubCraftMainWindow(QMainWindow):
         if success:
             self.progress_bar.setValue(100)
             self.progress_bar.setFormat("Audio extracted!")
-            self.session_state['audio_path'] = audio_path
+            self.session_state["audio_path"] = audio_path
             self.status.showMessage("Audio extracted successfully!", 4000)
             # Start transcription
             self.loading_overlay.show("Transcribing audio...")
@@ -491,7 +584,7 @@ class DubCraftMainWindow(QMainWindow):
         else:
             self.progress_bar.setValue(0)
             self.progress_bar.setFormat("Audio extraction failed.")
-            self.session_state['audio_path'] = None
+            self.session_state["audio_path"] = None
             self.status.showMessage("Audio extraction failed.", 4000)
             self.file_upload.setEnabled(True)
             self.language_selector.setEnabled(True)
@@ -501,14 +594,14 @@ class DubCraftMainWindow(QMainWindow):
         self.progress_bar.setValue(50)
         self.progress_bar.setFormat("Transcription complete!")
         self.transcript = segments
-        self.session_state['transcript'] = segments
+        self.session_state["transcript"] = segments
         autosave_session(self.session_state)
         self.status.showMessage("Transcription complete!", 4000)
         # Start translation
         self.loading_overlay.show("Translating transcript...")
         self.progress_bar.setValue(55)
         self.progress_bar.setFormat("Translating transcript...")
-        target_lang = self.session_state.get('language', 'English')
+        target_lang = self.session_state.get("language", "English")
         self.transl_thread = QThread()
         self.transl_worker = TranslationWorker(segments, target_lang)
         self.transl_worker.moveToThread(self.transl_thread)
@@ -525,9 +618,11 @@ class DubCraftMainWindow(QMainWindow):
         self.progress_bar.setFormat("Translation complete!")
         # Attach translated text to transcript
         for i, seg in enumerate(self.transcript):
-            seg['translated_text'] = translated_texts[i] if i < len(translated_texts) else seg['text']
-        self.translated_transcript = [seg['translated_text'] for seg in self.transcript]
-        self.session_state['translated_transcript'] = self.translated_transcript
+            seg["translated_text"] = (
+                translated_texts[i] if i < len(translated_texts) else seg["text"]
+            )
+        self.translated_transcript = [seg["translated_text"] for seg in self.transcript]
+        self.session_state["translated_transcript"] = self.translated_transcript
         autosave_session(self.session_state)
         self.status.showMessage("Translation complete!", 4000)
         self.loading_overlay.hide()
@@ -537,7 +632,7 @@ class DubCraftMainWindow(QMainWindow):
         self.progress_bar.setValue(20)
         self.progress_bar.setFormat("Detecting speakers...")
         self.diar_thread = QThread()
-        self.diar_worker = DiarizationWorker(self.session_state['audio_path'])
+        self.diar_worker = DiarizationWorker(self.session_state["audio_path"])
         self.diar_worker.moveToThread(self.diar_thread)
         self.diar_thread.started.connect(self.diar_worker.run)
         self.diar_worker.progress.connect(self.progress_bar.setValue)
@@ -550,7 +645,8 @@ class DubCraftMainWindow(QMainWindow):
     def show_help(self):
         msg = QMessageBox(self)
         msg.setWindowTitle("DubCraft Studio Help")
-        msg.setText("""
+        msg.setText(
+            """
 <b>DubCraft Studio Quick Tips</b><br><br>
 - <b>Upload Video:</b> Drag & drop or browse to select a video file.<br>
 - <b>Language:</b> Choose your target dubbing language.<br>
@@ -558,7 +654,8 @@ class DubCraftMainWindow(QMainWindow):
 - <b>Sidebar:</b> Use the sidebar to navigate between features.<br>
 - <b>Export:</b> Export your dubbed video and assets.<br><br>
 For more help, visit the documentation or contact the community!
-""")
+"""
+        )
         msg.setIcon(QMessageBox.Icon.Information)
         msg.exec()
 
@@ -576,11 +673,13 @@ For more help, visit the documentation or contact the community!
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        if hasattr(self, 'loading_overlay'):
+        if hasattr(self, "loading_overlay"):
             self.loading_overlay.resize(self.centralWidget().size())
 
     def browse_export_folder(self):
-        folder = QFileDialog.getExistingDirectory(self, "Select Export Folder", self.export_folder_le.text())
+        folder = QFileDialog.getExistingDirectory(
+            self, "Select Export Folder", self.export_folder_le.text()
+        )
         if folder:
             self.export_folder_le.setText(folder)
 
@@ -592,13 +691,17 @@ For more help, visit the documentation or contact the community!
         l.addWidget(self.make_section_header("Export Options"))
         self.export_video_cb = QCheckBox("Export Final Video (with Dubbed Audio)")
         self.export_video_cb.setChecked(True)
-        self.export_video_cb.setToolTip("Export the final video with dubbed audio track")
+        self.export_video_cb.setToolTip(
+            "Export the final video with dubbed audio track"
+        )
         l.addWidget(self.export_video_cb)
         self.export_audio_cb = QCheckBox("Export Translated Audio Only")
         self.export_audio_cb.setToolTip("Export only the dubbed/translated audio track")
         l.addWidget(self.export_audio_cb)
         self.export_transcript_cb = QCheckBox("Export Transcript (.txt)")
-        self.export_transcript_cb.setToolTip("Export the full transcript as a text file")
+        self.export_transcript_cb.setToolTip(
+            "Export the full transcript as a text file"
+        )
         l.addWidget(self.export_transcript_cb)
         self.export_subtitles_cb = QCheckBox("Export Subtitles (.srt)")
         self.export_subtitles_cb.setToolTip("Export subtitles as an SRT file")
@@ -638,23 +741,30 @@ For more help, visit the documentation or contact the community!
                 errors.append("Video not found. Please run the full workflow first.")
         # Export dubbed audio
         if self.export_audio_cb.isChecked():
-            if hasattr(self, 'dubbed_audio_path') and os.path.exists(self.dubbed_audio_path):
+            if hasattr(self, "dubbed_audio_path") and os.path.exists(
+                self.dubbed_audio_path
+            ):
                 audio_out = os.path.join(folder, "translated_audio.wav")
                 try:
                     import shutil
+
                     shutil.copy(self.dubbed_audio_path, audio_out)
                     exported.append("Audio: translated_audio.wav")
                 except Exception as e:
                     errors.append(f"Audio export failed: {e}")
             else:
-                errors.append("Dubbed audio not found. Please run the full workflow first.")
+                errors.append(
+                    "Dubbed audio not found. Please run the full workflow first."
+                )
         # Export transcript
         if self.export_transcript_cb.isChecked():
             transcript_out = os.path.join(folder, "transcript.txt")
             try:
-                with open(transcript_out, 'w', encoding='utf-8') as f:
+                with open(transcript_out, "w", encoding="utf-8") as f:
                     for seg in self.transcript:
-                        f.write(f"[{seg.get('start', 0):.2f}-{seg.get('end', 0):.2f}] {seg['text']}\n")
+                        f.write(
+                            f"[{seg.get('start', 0):.2f}-{seg.get('end', 0):.2f}] {seg['text']}\n"
+                        )
                 exported.append("Transcript: transcript.txt")
             except Exception as e:
                 errors.append(f"Transcript export failed: {e}")
@@ -672,10 +782,14 @@ For more help, visit the documentation or contact the community!
         msg.setWindowTitle("Export Results")
         if exported:
             msg.setIcon(QMessageBox.Icon.Information)
-            msg.setText("Exported:\n" + '\n'.join(exported))
+            msg.setText("Exported:\n" + "\n".join(exported))
         if errors:
             msg.setIcon(QMessageBox.Icon.Warning)
-            msg.setText((msg.text() + "\n\n" if exported else "") + "Errors:\n" + '\n'.join(errors))
+            msg.setText(
+                (msg.text() + "\n\n" if exported else "")
+                + "Errors:\n"
+                + "\n".join(errors)
+            )
         msg.exec()
 
     def make_logs_panel(self):
@@ -697,16 +811,16 @@ For more help, visit the documentation or contact the community!
         return w
 
     def load_logs(self):
-        log_path = os.path.join('export', 'dubcraft.log')
+        log_path = os.path.join("export", "dubcraft.log")
         if os.path.exists(log_path):
-            with open(log_path, 'r', encoding='utf-8') as f:
+            with open(log_path, "r", encoding="utf-8") as f:
                 self.logs_text.setPlainText(f.read())
         else:
             self.logs_text.setPlainText("No logs yet.")
 
     def clear_logs(self):
         self.logs_text.clear()
-        log_path = os.path.join('export', 'dubcraft.log')
+        log_path = os.path.join("export", "dubcraft.log")
         if os.path.exists(log_path):
-            with open(log_path, 'w', encoding='utf-8') as f:
-                f.write("") 
+            with open(log_path, "w", encoding="utf-8") as f:
+                f.write("")
