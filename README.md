@@ -1,4 +1,5 @@
 # DubCraft Studio
+[![CodeQL](https://github.com/Sadaqaty/DubCraft_Studio/actions/workflows/codeql.yml/badge.svg)](https://github.com/Sadaqaty/DubCraft_Studio/actions/workflows/codeql.yml)
 
 **DubCraft Studio** is a free, open-source desktop tool for AI-powered video dubbing, translation, and voiceover. It features a beautiful PyQt6 interface, fast transcription, speaker diarization, natural TTS, and professional export options.
 
