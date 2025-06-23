@@ -1,0 +1,23 @@
+name: Welcome New Contributors
+
+on:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened]
+
+jobs:
+  welcome:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/first-interaction@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-message: |
+            👋 **Welcome to DubCraft Studio!**
+
+            Thank you for opening your first issue. Please check the README and Troubleshooting section for common questions. We appreciate your feedback and contributions!
+          pr-message: |
+            👋 **Welcome to DubCraft Studio!**
+
+            Thank you for your first pull request! Please review the README and Contributing section. We'll review your PR as soon as possible. Happy hacking! 

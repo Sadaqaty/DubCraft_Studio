@@ -1,0 +1,13 @@
+ui:
+  - 'ui/**'
+core:
+  - 'core/**'
+docs:
+  - '*.md'
+  - 'docs/**'
+tests:
+  - 'tests/**'
+modules:
+  - 'modules/**'
+assets:
+  - 'assets/**' 
